@@ -40,7 +40,14 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) getHits(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hits: ", cfg.fsHits)
+	w.Header().Set("Content-type", "text/html")
+	body := `<html>
+<body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+</body>
+</html>`
+	fmt.Fprintf(w, body, cfg.fsHits)
 }
 
 func (cfg *apiConfig) resetHits(w http.ResponseWriter, r *http.Request) {
@@ -52,9 +59,9 @@ func main() {
 	apiCfg := newApiConfig()
 	fsHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/*", apiCfg.middlewareMetricsInc(fsHandler))
-	mux.HandleFunc("GET /reset", apiCfg.resetHits)
-	mux.HandleFunc("GET /metrics", apiCfg.getHits)
-	mux.HandleFunc("GET /healthz", checkHealth)
+	mux.HandleFunc("GET /api/reset", apiCfg.resetHits)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.getHits)
+	mux.HandleFunc("GET /api/healthz", checkHealth)
 	corsMux := middlewareCors(mux)
 	server := http.Server{Addr: "localhost:8080", Handler: corsMux}
 	err := server.ListenAndServe()
