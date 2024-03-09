@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 func MwAddCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -18,6 +21,13 @@ func MwAddCors(next http.Handler) http.Handler {
 func (cfg *Config) MwIncrementHits(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cfg.RegisterHit()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func MwLog(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
