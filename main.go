@@ -18,9 +18,17 @@ func middlewareCors(next http.Handler) http.Handler {
 	})
 }
 
+func readinessCheck(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func main() {
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir(".")))
+	fsHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
+	mux.Handle("/app/*", fsHandler)
+	mux.HandleFunc("/healthz", readinessCheck)
 	corsMux := middlewareCors(mux)
 	server := http.Server{Addr: "localhost:8080", Handler: corsMux}
 	err := server.ListenAndServe()
