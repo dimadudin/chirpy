@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"slices"
+	"strings"
 )
 
 func (cfg *Config) AdminGetHitCount(w http.ResponseWriter, r *http.Request) {
@@ -34,17 +36,31 @@ func ApiCheckHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func ApiValidateChirp(w http.ResponseWriter, r *http.Request) {
-	dat, err := io.ReadAll(r.Body)
+	type requestParameters struct {
+		Body string `json:"body"`
+	}
+	rqParams := requestParameters{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&rqParams)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if len(dat) > 140 || len(dat) == 0 {
+	if len(rqParams.Body) > 140 || len(rqParams.Body) == 0 {
 		RespondWithError(w, http.StatusBadRequest, "Invalid chirp")
 		return
 	}
-	resp := struct {
-		Valid bool `json:"valid"`
-	}{Valid: true}
-	RespondWithJSON(w, http.StatusOK, resp)
+	badWords := []string{"kerfuffle", "sharbert", "fornax"}
+	censor := "****"
+	words := strings.Split(rqParams.Body, " ")
+	for i, word := range words {
+		if slices.Contains(badWords, strings.ToLower(word)) {
+			words[i] = censor
+		}
+	}
+	type responseParameters struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
+	respParams := responseParameters{CleanedBody: strings.Join(words, " ")}
+	RespondWithJSON(w, http.StatusOK, respParams)
 }
