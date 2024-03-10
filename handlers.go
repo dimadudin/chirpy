@@ -33,7 +33,7 @@ func ApiCheckHealth(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `OK`)
 }
 
-func ApiValidateChirp(w http.ResponseWriter, r *http.Request) {
+func ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 	type requestParameters struct {
 		Body string `json:"body"`
 	}
@@ -50,8 +50,9 @@ func ApiValidateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 	censored := CensorChirp(rqParams.Body)
 	type responseParameters struct {
-		CleanedBody string `json:"cleaned_body"`
+		Id   int    `json:"id"`
+		Body string `json:"body"`
 	}
-	respParams := responseParameters{CleanedBody: censored}
-	RespondWithJSON(w, http.StatusOK, respParams)
+	respParams := responseParameters{Id: 1, Body: censored}
+	RespondWithJSON(w, http.StatusCreated, respParams)
 }
