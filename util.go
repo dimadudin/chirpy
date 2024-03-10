@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 )
 
 func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -28,4 +30,16 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 		Error string `json:"error"`
 	}{Error: msg}
 	RespondWithJSON(w, code, resp)
+}
+
+func CensorChirp(chirp string) string {
+	badWords := []string{"kerfuffle", "sharbert", "fornax"}
+	censor := "****"
+	words := strings.Split(chirp, " ")
+	for i, word := range words {
+		if slices.Contains(badWords, strings.ToLower(word)) {
+			words[i] = censor
+		}
+	}
+	return strings.Join(words, " ")
 }

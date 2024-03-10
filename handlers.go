@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
-	"strings"
 )
 
 func (cfg *Config) AdminGetHitCount(w http.ResponseWriter, r *http.Request) {
@@ -50,17 +48,10 @@ func ApiValidateChirp(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusBadRequest, "Invalid chirp")
 		return
 	}
-	badWords := []string{"kerfuffle", "sharbert", "fornax"}
-	censor := "****"
-	words := strings.Split(rqParams.Body, " ")
-	for i, word := range words {
-		if slices.Contains(badWords, strings.ToLower(word)) {
-			words[i] = censor
-		}
-	}
+	censored := CensorChirp(rqParams.Body)
 	type responseParameters struct {
 		CleanedBody string `json:"cleaned_body"`
 	}
-	respParams := responseParameters{CleanedBody: strings.Join(words, " ")}
+	respParams := responseParameters{CleanedBody: censored}
 	RespondWithJSON(w, http.StatusOK, respParams)
 }
