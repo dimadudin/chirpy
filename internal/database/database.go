@@ -131,6 +131,26 @@ func (db *DB) GetUserByEmail(email string) (User, error) {
 	return User{}, errors.New("no user with such email")
 }
 
+// UpdateUser updates the user with the specified id to contain the new email and password
+// returns the updated user
+func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+	updatedUser := User{
+		Id:       id,
+		Email:    email,
+		Password: password,
+	}
+	dbs.Users[id] = updatedUser
+	err = db.writeDB(dbs)
+	if err != nil {
+		return User{}, err
+	}
+	return updatedUser, nil
+}
+
 // CreateChirp creates a new chirp and saves it to disk
 func (db *DB) CreateChirp(body string) (Chirp, error) {
 	dbs, err := db.loadDB()
