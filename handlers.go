@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 func (cfg *Config) AdminGetHitCount(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +60,20 @@ func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *Config) ApiGetChirps(w http.ResponseWriter, r *http.Request) {
 	chirps, err := cfg.db.GetChirps()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusOK, chirps)
+}
+
+func (cfg *Config) ApiGetChirpByID(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := strconv.Atoi(r.PathValue("chirpID"))
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	chirps, err := cfg.db.GetChirpByID(chirpID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

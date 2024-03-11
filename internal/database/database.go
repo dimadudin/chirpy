@@ -104,3 +104,16 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 	sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id < chirps[j].Id })
 	return chirps, nil
 }
+
+// GetChirpByID returns a chirp with the specified id
+func (db *DB) GetChirpByID(id int) (Chirp, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return Chirp{}, err
+	}
+	chirp, ok := dbs.Chirps[id]
+	if !ok {
+		return Chirp{}, errors.New("no chirp with such ID")
+	}
+	return chirp, nil
+}
