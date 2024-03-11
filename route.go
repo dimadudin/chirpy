@@ -15,6 +15,7 @@ func Route(cfg Config) http.Handler {
 	mux.HandleFunc("GET /api/reset", cfg.ApiResetHits)
 	mux.HandleFunc("GET /admin/metrics", cfg.AdminGetHitCount)
 	mux.HandleFunc("POST /api/users", cfg.ApiCreateUser)
+	mux.HandleFunc("POST /api/login", cfg.ApiLogin)
 	mux.HandleFunc("POST /api/chirps", cfg.ApiPostChirp)
 	mux.HandleFunc("GET /api/chirps", cfg.ApiGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.ApiGetChirpByID)

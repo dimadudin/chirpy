@@ -90,12 +90,31 @@ func (db *DB) CreateUser(email string, password string) (User, error) {
 		Email:    email,
 		Password: password,
 	}
+	for _, v := range dbs.Users {
+		if newUser.Email == v.Email {
+			return User{}, errors.New("a user with this email already exists")
+		}
+	}
 	dbs.Users[newUser.Id] = newUser
 	err = db.writeDB(dbs)
 	if err != nil {
 		return User{}, err
 	}
 	return newUser, nil
+}
+
+// GetUsers returns all users in the database
+func (db *DB) GetUsers() ([]User, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+	users := make([]User, 0, len(dbs.Chirps))
+	for _, v := range dbs.Users {
+		users = append(users, v)
+	}
+	sort.Slice(users, func(i, j int) bool { return users[i].Id < users[j].Id })
+	return users, nil
 }
 
 // CreateChirp creates a new chirp and saves it to disk
