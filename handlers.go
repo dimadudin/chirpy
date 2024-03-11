@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (cfg *Config) AdminGetHitCount(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +38,8 @@ func ApiCheckHealth(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *Config) ApiCreateUser(w http.ResponseWriter, r *http.Request) {
 	type requestParameters struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	rqParams := requestParameters{}
 	decoder := json.NewDecoder(r.Body)
@@ -45,12 +48,22 @@ func (cfg *Config) ApiCreateUser(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	newUser, err := cfg.db.CreateUser(rqParams.Email)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(rqParams.Password), 0)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusCreated, newUser)
+	newUser, err := cfg.db.CreateUser(rqParams.Email, string(hashedPassword))
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	type responseParameters struct {
+		Id    int    `json:"id"`
+		Email string `json:"email"`
+	}
+	respParams := responseParameters{Id: newUser.Id, Email: newUser.Email}
+	RespondWithJSON(w, http.StatusCreated, respParams)
 }
 
 func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {

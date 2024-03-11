@@ -18,8 +18,9 @@ type DBStructure struct {
 	Chirps map[int]Chirp `json:"chirps"`
 }
 type User struct {
-	Id    int    `json:"id"`
-	Email string `json:"email"`
+	Id       int    `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Chirp struct {
@@ -79,14 +80,15 @@ func (db *DB) loadDB() (DBStructure, error) {
 }
 
 // CreateUser creates a new user and saves it to disk
-func (db *DB) CreateUser(email string) (User, error) {
+func (db *DB) CreateUser(email string, password string) (User, error) {
 	dbs, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
 	newUser := User{
-		Id:    len(dbs.Users) + 1,
-		Email: email,
+		Id:       len(dbs.Users) + 1,
+		Email:    email,
+		Password: password,
 	}
 	dbs.Users[newUser.Id] = newUser
 	err = db.writeDB(dbs)
