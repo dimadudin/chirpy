@@ -33,7 +33,7 @@ func ApiCheckHealth(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `OK`)
 }
 
-func ApiPostChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 	type requestParameters struct {
 		Body string `json:"body"`
 	}
@@ -49,10 +49,19 @@ func ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	censored := CensorChirp(rqParams.Body)
-	type responseParameters struct {
-		Id   int    `json:"id"`
-		Body string `json:"body"`
+	newChirp, err := cfg.db.CreateChirp(censored)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
-	respParams := responseParameters{Id: 1, Body: censored}
-	RespondWithJSON(w, http.StatusCreated, respParams)
+	RespondWithJSON(w, http.StatusCreated, newChirp)
+}
+
+func (cfg *Config) ApiGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.db.GetChirps()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusOK, chirps)
 }

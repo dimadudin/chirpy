@@ -14,7 +14,8 @@ func Route(cfg Config) http.Handler {
 	mux.HandleFunc("GET /api/healthz", ApiCheckHealth)
 	mux.HandleFunc("GET /api/reset", cfg.ApiResetHits)
 	mux.HandleFunc("GET /admin/metrics", cfg.AdminGetHitCount)
-	mux.HandleFunc("POST /api/chirps", ApiPostChirp)
+	mux.HandleFunc("POST /api/chirps", cfg.ApiPostChirp)
+	mux.HandleFunc("GET /api/chirps", cfg.ApiGetChirps)
 	corsMux := MwAddCors(mux)
 	return corsMux
 }

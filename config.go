@@ -1,11 +1,14 @@
 package main
 
+import "github.com/dimadudin/web-server-go/internal/database"
+
 type Config struct {
+	db     *database.DB
 	fsHits int
 }
 
-func NewApiConfig() Config {
-	return Config{fsHits: 0}
+func NewApiConfig(db *database.DB) Config {
+	return Config{db: db, fsHits: 0}
 }
 
 func (cfg *Config) RegisterHit() {
