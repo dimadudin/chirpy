@@ -34,6 +34,25 @@ func ApiCheckHealth(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `OK`)
 }
 
+func (cfg *Config) ApiCreateUser(w http.ResponseWriter, r *http.Request) {
+	type requestParameters struct {
+		Email string `json:"email"`
+	}
+	rqParams := requestParameters{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&rqParams)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	newUser, err := cfg.db.CreateUser(rqParams.Email)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusCreated, newUser)
+}
+
 func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 	type requestParameters struct {
 		Body string `json:"body"`
