@@ -117,6 +117,20 @@ func (db *DB) GetUsers() ([]User, error) {
 	return users, nil
 }
 
+// GetUserByEmail returns a user with the specified email
+func (db *DB) GetUserByEmail(email string) (User, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+	for _, user := range dbs.Users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return User{}, errors.New("no user with such email")
+}
+
 // CreateChirp creates a new chirp and saves it to disk
 func (db *DB) CreateChirp(body string) (Chirp, error) {
 	dbs, err := db.loadDB()

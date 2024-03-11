@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/dimadudin/web-server-go/internal/database"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -20,11 +21,17 @@ func main() {
 	if *dbg {
 		os.Remove(dbPath)
 	}
+
 	db, err := database.NewDB(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	cfg := NewApiConfig(db)
+
+	godotenv.Load()
+	jwtSecret := os.Getenv("JWT_SECRET")
+
+	cfg := NewApiConfig(db, jwtSecret)
+
 	router := Route(cfg)
 	server := http.Server{Addr: ":" + port, Handler: router}
 	log.Fatal(server.ListenAndServe())
