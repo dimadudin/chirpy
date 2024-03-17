@@ -26,6 +26,7 @@ func Route(cfg Config) http.Handler {
 	mux.HandleFunc("POST /api/chirps", cfg.ApiPostChirp)
 	mux.HandleFunc("GET /api/chirps", cfg.ApiGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.ApiGetChirpByID)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.ApiDeleteChirpByID)
 
 	return MwAddCors(mux)
 }

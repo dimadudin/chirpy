@@ -210,6 +210,21 @@ func (db *DB) GetChirpByID(id int) (Chirp, error) {
 	return chirp, nil
 }
 
+// DeleteChirp deletes a chirp
+func (db *DB) DeleteChirp(id int) (Chirp, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return Chirp{}, err
+	}
+	deletedChirp := dbs.Chirps[id]
+	delete(dbs.Chirps, id)
+	err = db.writeDB(dbs)
+	if err != nil {
+		return Chirp{}, err
+	}
+	return deletedChirp, nil
+}
+
 // CreateToken creates a new refresh token  and saves it to disk
 func (db *DB) CreateToken(tokenStr string) (RefreshToken, error) {
 	dbs, err := db.loadDB()
