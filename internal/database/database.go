@@ -234,6 +234,22 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 	return chirps, nil
 }
 
+// GetChirpsByAuthor returns all chirps with the specified author_id in the database
+func (db *DB) GetChirpsByAuthor(author_id int) ([]Chirp, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+	chirps := make([]Chirp, 0, len(dbs.Chirps))
+	for _, v := range dbs.Chirps {
+		if v.AuthorId == author_id {
+			chirps = append(chirps, v)
+		}
+	}
+	sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id < chirps[j].Id })
+	return chirps, nil
+}
+
 // GetChirpByID returns a chirp with the specified id
 func (db *DB) GetChirpByID(id int) (Chirp, error) {
 	dbs, err := db.loadDB()
