@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 )
 
 type DB struct {
@@ -14,9 +15,11 @@ type DB struct {
 }
 
 type DBStructure struct {
-	Users  map[int]User  `json:"users"`
-	Chirps map[int]Chirp `json:"chirps"`
+	Users         map[int]User            `json:"users"`
+	Chirps        map[int]Chirp           `json:"chirps"`
+	RefreshTokens map[string]RefreshToken `json:"revocations"`
 }
+
 type User struct {
 	Id       int    `json:"id"`
 	Email    string `json:"email"`
@@ -26,6 +29,11 @@ type User struct {
 type Chirp struct {
 	Id   int    `json:"id"`
 	Body string `json:"body"`
+}
+
+type RefreshToken struct {
+	Id        string    `json:"id"`
+	RevokedAt time.Time `json:"revoked_at"`
 }
 
 // NewDB creates a new database connection
@@ -43,7 +51,11 @@ func NewDB(path string) (*DB, error) {
 func (db *DB) ensureDB() error {
 	_, err := os.Stat(db.path)
 	if errors.Is(err, os.ErrNotExist) {
-		newDBStructure := DBStructure{Users: make(map[int]User), Chirps: make(map[int]Chirp)}
+		newDBStructure := DBStructure{
+			Users:         make(map[int]User),
+			Chirps:        make(map[int]Chirp),
+			RefreshTokens: make(map[string]RefreshToken),
+		}
 		err := db.writeDB(newDBStructure)
 		return err
 	} else {
@@ -194,4 +206,51 @@ func (db *DB) GetChirpByID(id int) (Chirp, error) {
 		return Chirp{}, errors.New("no chirp with such ID")
 	}
 	return chirp, nil
+}
+
+// CreateToken creates a new refresh token  and saves it to disk
+func (db *DB) CreateToken(tokenStr string) (RefreshToken, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return RefreshToken{}, err
+	}
+	newToken := RefreshToken{Id: tokenStr, RevokedAt: time.Time{}.UTC()}
+	dbs.RefreshTokens[newToken.Id] = newToken
+	err = db.writeDB(dbs)
+	if err != nil {
+		return RefreshToken{}, err
+	}
+	return newToken, nil
+}
+
+// GetToken returns a refresh token with the specified id
+func (db *DB) GetToken(tokenStr string) (RefreshToken, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return RefreshToken{}, err
+	}
+	token, ok := dbs.RefreshTokens[tokenStr]
+	if !ok {
+		return RefreshToken{}, errors.New("no such token")
+	}
+	return token, nil
+}
+
+// RevokeToken sets the revoked at time
+func (db *DB) RevokeToken(tokenStr string) (RefreshToken, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return RefreshToken{}, err
+	}
+	token, ok := dbs.RefreshTokens[tokenStr]
+	if !ok {
+		return RefreshToken{}, errors.New("no such token")
+	}
+	token.RevokedAt = time.Now().UTC()
+	dbs.RefreshTokens[tokenStr] = token
+	err = db.writeDB(dbs)
+	if err != nil {
+		return RefreshToken{}, err
+	}
+	return token, nil
 }

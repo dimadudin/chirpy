@@ -15,6 +15,8 @@ func Route(cfg Config) http.Handler {
 
 	mux.HandleFunc("GET /api/healthz", ApiCheckHealth)
 	mux.HandleFunc("GET /api/reset", cfg.ApiResetHits)
+	mux.HandleFunc("POST /api/refresh", cfg.ApiRefreshToken)
+	mux.HandleFunc("POST /api/revoke", cfg.ApiRevokeToken)
 	mux.HandleFunc("GET /admin/metrics", cfg.AdminGetHitCount)
 
 	mux.HandleFunc("POST /api/users", cfg.ApiCreateUser)

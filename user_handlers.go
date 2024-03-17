@@ -47,9 +47,8 @@ func (cfg *Config) ApiCreateUser(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *Config) ApiLogin(w http.ResponseWriter, r *http.Request) {
 	type requestParameters struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiresInSeconds string `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	rqParams := requestParameters{}
 	decoder := json.NewDecoder(r.Body)
@@ -71,44 +70,56 @@ func (cfg *Config) ApiLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expTime := time.Hour * 24
-	if rqParams.ExpiresInSeconds != "" {
-		expTime, err := time.ParseDuration(rqParams.ExpiresInSeconds)
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-		if expTime > time.Hour*24 {
-			expTime = time.Hour * 24
-		}
-	}
-
-	claims := &jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+	refreshExpTime := time.Hour * 24 * 60
+	refreshClaims := &jwt.RegisteredClaims{
+		Issuer:    "chirpy-refresh",
 		Subject:   strconv.Itoa(user.Id),
-		ExpiresAt: &jwt.NumericDate{Time: time.Now().UTC().Add(expTime)},
+		ExpiresAt: &jwt.NumericDate{Time: time.Now().UTC().Add(refreshExpTime)},
 		IssuedAt:  &jwt.NumericDate{Time: time.Now().UTC()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString([]byte(cfg.jwtSecret))
+
+	accessExpTime := time.Hour
+	accessClaims := &jwt.RegisteredClaims{
+		Issuer:    "chirpy-access",
+		Subject:   strconv.Itoa(user.Id),
+		ExpiresAt: &jwt.NumericDate{Time: time.Now().UTC().Add(accessExpTime)},
+		IssuedAt:  &jwt.NumericDate{Time: time.Now().UTC()},
+	}
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshTokenStr, err := refreshToken.SignedString([]byte(cfg.jwtSecret))
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessTokenStr, err := accessToken.SignedString([]byte(cfg.jwtSecret))
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	_, err = cfg.db.CreateToken(refreshTokenStr)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	type responseParameters struct {
-		Id    int    `json:"id"`
-		Email string `json:"email"`
-		Token string `json:"token"`
+		Id           int    `json:"id"`
+		Email        string `json:"email"`
+		AccessToken  string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
-	respParams := responseParameters{Id: user.Id, Email: user.Email, Token: tokenStr}
+	respParams := responseParameters{Id: user.Id, Email: user.Email, AccessToken: accessTokenStr, RefreshToken: refreshTokenStr}
 	RespondWithJSON(w, http.StatusOK, respParams)
 }
 
 func (cfg *Config) ApiUpdateUser(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		RespondWithError(w, http.StatusInternalServerError, errors.New("no auth").Error())
+		RespondWithError(w, http.StatusUnauthorized, errors.New("no auth").Error())
 		return
 	}
 
@@ -119,6 +130,16 @@ func (cfg *Config) ApiUpdateUser(w http.ResponseWriter, r *http.Request) {
 		})
 	if err != nil {
 		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if issuer != "chirpy-access" {
+		RespondWithError(w, http.StatusUnauthorized, errors.New("invalid token issuer").Error())
 		return
 	}
 
