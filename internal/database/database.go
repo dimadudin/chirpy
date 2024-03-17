@@ -27,8 +27,9 @@ type User struct {
 }
 
 type Chirp struct {
-	Id   int    `json:"id"`
-	Body string `json:"body"`
+	Id       int    `json:"id"`
+	AuthorId int    `json:"author_id"`
+	Body     string `json:"body"`
 }
 
 type RefreshToken struct {
@@ -164,14 +165,15 @@ func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(body string, author_id int) (Chirp, error) {
 	dbs, err := db.loadDB()
 	if err != nil {
 		return Chirp{}, err
 	}
 	newChirp := Chirp{
-		Id:   len(dbs.Chirps) + 1,
-		Body: body,
+		Id:       len(dbs.Chirps) + 1,
+		AuthorId: author_id,
+		Body:     body,
 	}
 	dbs.Chirps[newChirp.Id] = newChirp
 	err = db.writeDB(dbs)

@@ -2,17 +2,59 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
+		RespondWithError(w, http.StatusUnauthorized, errors.New("no auth").Error())
+		return
+	}
+
+	tokenStr := strings.TrimPrefix(auth, "Bearer ")
+	token, err := jwt.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.jwtSecret), nil
+		})
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if issuer != "chirpy-access" {
+		RespondWithError(w, http.StatusUnauthorized, errors.New("invalid token issuer").Error())
+		return
+	}
+
+	userIDStr, err := token.Claims.GetSubject()
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	type requestParameters struct {
 		Body string `json:"body"`
 	}
 	rqParams := requestParameters{}
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&rqParams)
+	err = decoder.Decode(&rqParams)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -22,7 +64,7 @@ func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	censored := CensorChirp(rqParams.Body)
-	newChirp, err := cfg.db.CreateChirp(censored)
+	newChirp, err := cfg.db.CreateChirp(censored, userID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -45,10 +87,10 @@ func (cfg *Config) ApiGetChirpByID(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	chirps, err := cfg.db.GetChirpByID(chirpID)
+	chirp, err := cfg.db.GetChirpByID(chirpID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJSON(w, http.StatusOK, chirps)
+	RespondWithJSON(w, http.StatusOK, chirp)
 }
