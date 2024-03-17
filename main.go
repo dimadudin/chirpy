@@ -29,8 +29,9 @@ func main() {
 
 	godotenv.Load()
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaApiKey := os.Getenv("POLKA_API_KEY")
 
-	cfg := NewApiConfig(db, jwtSecret)
+	cfg := NewApiConfig(db, jwtSecret, polkaApiKey)
 
 	router := Route(cfg)
 	server := http.Server{Addr: ":" + port, Handler: router}

@@ -197,6 +197,18 @@ func (cfg *Config) ApiUpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *Config) ApiUpgradeUser(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
+		RespondWithError(w, http.StatusUnauthorized, errors.New("no auth").Error())
+		return
+	}
+
+	apiKey := strings.TrimPrefix(auth, "ApiKey ")
+	if apiKey != cfg.polkaApiKey {
+		RespondWithError(w, http.StatusUnauthorized, errors.New("wrong api key").Error())
+		return
+	}
+
 	type requestParameters struct {
 		Data struct {
 			UserId int `json:"user_id"`
