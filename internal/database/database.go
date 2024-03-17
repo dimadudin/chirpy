@@ -21,9 +21,10 @@ type DBStructure struct {
 }
 
 type User struct {
-	Id       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Id          int    `json:"id"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 type Chirp struct {
@@ -99,9 +100,10 @@ func (db *DB) CreateUser(email string, password string) (User, error) {
 		return User{}, err
 	}
 	newUser := User{
-		Id:       len(dbs.Users) + 1,
-		Email:    email,
-		Password: password,
+		Id:          len(dbs.Users) + 1,
+		Email:       email,
+		Password:    password,
+		IsChirpyRed: false,
 	}
 	for _, v := range dbs.Users {
 		if newUser.Email == v.Email {
@@ -130,6 +132,19 @@ func (db *DB) GetUsers() ([]User, error) {
 	return users, nil
 }
 
+// GetUserByID returns a user with the specified ID
+func (db *DB) GetUserByID(id int) (User, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+	user, ok := dbs.Users[id]
+	if !ok {
+		return User{}, errors.New("no user with such id")
+	}
+	return user, nil
+}
+
 // GetUserByEmail returns a user with the specified email
 func (db *DB) GetUserByEmail(email string) (User, error) {
 	dbs, err := db.loadDB()
@@ -152,9 +167,10 @@ func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
 		return User{}, err
 	}
 	updatedUser := User{
-		Id:       id,
-		Email:    email,
-		Password: password,
+		Id:          id,
+		Email:       email,
+		Password:    password,
+		IsChirpyRed: dbs.Users[id].IsChirpyRed,
 	}
 	dbs.Users[id] = updatedUser
 	err = db.writeDB(dbs)
@@ -162,6 +178,27 @@ func (db *DB) UpdateUser(id int, email string, password string) (User, error) {
 		return User{}, err
 	}
 	return updatedUser, nil
+}
+
+// UpgradeUser sets the IsChirpyRed to true
+// returns the updated user
+func (db *DB) UpgradeUser(id int) (User, error) {
+	dbs, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+	upgradedUser := User{
+		Id:          id,
+		Email:       dbs.Users[id].Email,
+		Password:    dbs.Users[id].Password,
+		IsChirpyRed: true,
+	}
+	dbs.Users[id] = upgradedUser
+	err = db.writeDB(dbs)
+	if err != nil {
+		return User{}, err
+	}
+	return upgradedUser, nil
 }
 
 // CreateChirp creates a new chirp and saves it to disk

@@ -38,10 +38,11 @@ func (cfg *Config) ApiCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type responseParameters struct {
-		Id    int    `json:"id"`
-		Email string `json:"email"`
+		Id          int    `json:"id"`
+		Email       string `json:"email"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
-	respParams := responseParameters{Id: newUser.Id, Email: newUser.Email}
+	respParams := responseParameters{Id: newUser.Id, Email: newUser.Email, IsChirpyRed: newUser.IsChirpyRed}
 	RespondWithJSON(w, http.StatusCreated, respParams)
 }
 
@@ -109,10 +110,17 @@ func (cfg *Config) ApiLogin(w http.ResponseWriter, r *http.Request) {
 	type responseParameters struct {
 		Id           int    `json:"id"`
 		Email        string `json:"email"`
+		IsChirpyRed  bool   `json:"is_chirpy_red"`
 		AccessToken  string `json:"token"`
 		RefreshToken string `json:"refresh_token"`
 	}
-	respParams := responseParameters{Id: user.Id, Email: user.Email, AccessToken: accessTokenStr, RefreshToken: refreshTokenStr}
+	respParams := responseParameters{
+		Id:           user.Id,
+		Email:        user.Email,
+		IsChirpyRed:  user.IsChirpyRed,
+		AccessToken:  accessTokenStr,
+		RefreshToken: refreshTokenStr,
+	}
 	RespondWithJSON(w, http.StatusOK, respParams)
 }
 
@@ -180,9 +188,45 @@ func (cfg *Config) ApiUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type responseParameters struct {
-		Id    int    `json:"id"`
-		Email string `json:"email"`
+		Id          int    `json:"id"`
+		Email       string `json:"email"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
-	respParams := responseParameters{Id: user.Id, Email: user.Email}
+	respParams := responseParameters{Id: user.Id, Email: user.Email, IsChirpyRed: user.IsChirpyRed}
 	RespondWithJSON(w, http.StatusOK, respParams)
+}
+
+func (cfg *Config) ApiUpgradeUser(w http.ResponseWriter, r *http.Request) {
+	type requestParameters struct {
+		Data struct {
+			UserId int `json:"user_id"`
+		} `json:"data"`
+		Event string `json:"event"`
+	}
+	rqParams := requestParameters{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&rqParams)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if rqParams.Event != "user.upgraded" {
+		RespondWithJSON(w, http.StatusOK, struct{}{})
+		return
+	}
+
+	_, err = cfg.db.GetUserByID(rqParams.Data.UserId)
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	_, err = cfg.db.UpgradeUser(rqParams.Data.UserId)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, struct{}{})
 }

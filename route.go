@@ -23,6 +23,8 @@ func Route(cfg Config) http.Handler {
 	mux.HandleFunc("PUT /api/users", cfg.ApiUpdateUser)
 	mux.HandleFunc("POST /api/login", cfg.ApiLogin)
 
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.ApiUpgradeUser)
+
 	mux.HandleFunc("POST /api/chirps", cfg.ApiPostChirp)
 	mux.HandleFunc("GET /api/chirps", cfg.ApiGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.ApiGetChirpByID)
