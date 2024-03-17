@@ -73,6 +73,9 @@ func (cfg *Config) ApiPostChirp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *Config) ApiGetChirps(w http.ResponseWriter, r *http.Request) {
+	sortOrder := r.URL.Query().Get("sort")
+	sortAscending := (sortOrder != "desc")
+
 	authorIdStr := r.URL.Query().Get("author_id")
 	if authorIdStr != "" {
 		authorId, err := strconv.Atoi(authorIdStr)
@@ -80,7 +83,7 @@ func (cfg *Config) ApiGetChirps(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		chirps, err := cfg.db.GetChirpsByAuthor(authorId)
+		chirps, err := cfg.db.GetChirpsByAuthor(authorId, sortAscending)
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -89,7 +92,7 @@ func (cfg *Config) ApiGetChirps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chirps, err := cfg.db.GetChirps()
+	chirps, err := cfg.db.GetChirps(sortAscending)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

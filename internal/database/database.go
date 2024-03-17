@@ -221,7 +221,7 @@ func (db *DB) CreateChirp(body string, author_id int) (Chirp, error) {
 }
 
 // GetChirps returns all chirps in the database
-func (db *DB) GetChirps() ([]Chirp, error) {
+func (db *DB) GetChirps(sortInAscendingOrder bool) ([]Chirp, error) {
 	dbs, err := db.loadDB()
 	if err != nil {
 		return nil, err
@@ -230,12 +230,16 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 	for _, v := range dbs.Chirps {
 		chirps = append(chirps, v)
 	}
-	sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id < chirps[j].Id })
+	if sortInAscendingOrder {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id < chirps[j].Id })
+	} else {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id > chirps[j].Id })
+	}
 	return chirps, nil
 }
 
 // GetChirpsByAuthor returns all chirps with the specified author_id in the database
-func (db *DB) GetChirpsByAuthor(author_id int) ([]Chirp, error) {
+func (db *DB) GetChirpsByAuthor(author_id int, sortInAscendingOrder bool) ([]Chirp, error) {
 	dbs, err := db.loadDB()
 	if err != nil {
 		return nil, err
@@ -246,7 +250,11 @@ func (db *DB) GetChirpsByAuthor(author_id int) ([]Chirp, error) {
 			chirps = append(chirps, v)
 		}
 	}
-	sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id < chirps[j].Id })
+	if sortInAscendingOrder {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id < chirps[j].Id })
+	} else {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].Id > chirps[j].Id })
+	}
 	return chirps, nil
 }
 
